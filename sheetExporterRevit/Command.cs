@@ -65,13 +65,16 @@ namespace sheetExporterRevit
                         viewIds.Add(viewSheet.Id);
                     }
 
-                    DWGExportOptions options = new DWGExportOptions();
-                    ExportDWGSettings dwgSettings = ExportDWGSettings.Create(doc, "mySetting");
-                    options = dwgSettings.GetDWGExportOptions();
-                    options.MergedViews = true;
+                    DWGExportOptions dwgOptions = new DWGExportOptions();
+                    dwgOptions.MergedViews = true;
 
-                    doc.Export(Path.GetDirectoryName(modelPath) + "\\exportedDwgs", "result.dwg", viewIds, options);
 
+
+                    Directory.CreateDirectory(Directory.GetCurrentDirectory() + "\\exportedDwgs");
+                    if (Directory.Exists(Directory.GetCurrentDirectory() + "\\exportedDwgs"))
+                        LogTrace("ExportedDwgs directory exists");
+                    doc.Export(Directory.GetCurrentDirectory() + "\\exportedDwgs", "result.dwg", viewIds, dwgOptions);
+                    LogTrace("Export Process Completedd");
                     trans.Commit();
                 }
                 catch (Exception ee)
