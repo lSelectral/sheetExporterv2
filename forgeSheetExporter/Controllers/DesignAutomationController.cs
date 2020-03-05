@@ -193,7 +193,7 @@ namespace forgeSample.Controllers
                     Parameters = new Dictionary<string, Parameter>()
                     {
                         { "inputFile", new Parameter() { Description = "input file", LocalName = "$(inputFile)", Ondemand = false, Required = true, Verb = Verb.Get, Zip = false } },
-                        { "outputFile", new Parameter() { Description = "output file", LocalName = "outputFile." + engineAttributes.extension, Ondemand = false, Required = true, Verb = Verb.Put, Zip = true } }
+                        { "outputFile", new Parameter() { Description = "output file", LocalName = "result", Ondemand = false, Required = true, Verb = Verb.Put, Zip = true } }
                     },
                         Settings = new Dictionary<string, ISetting>()
                     {

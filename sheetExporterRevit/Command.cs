@@ -70,17 +70,7 @@ namespace sheetExporterRevit
                     options = dwgSettings.GetDWGExportOptions();
                     options.MergedViews = true;
 
-                    doc.Export(Path.GetDirectoryName(modelPath) + "\\exportedDwgs", "rvt", viewIds, options);
-
-                    //if (RuntimeValue.RunOnCloud)
-                    //{
-                    //    doc.Export(Directory.GetCurrentDirectory() + "\\exportedDwgs", "rvt", viewIds, options);
-                    //}
-                    //else
-                    //{
-                    //    // For local test
-                    //    doc.Export(Path.GetDirectoryName(modelPath) + "\\exportedDwgs", "rvt", viewIds, options);
-                    //}
+                    doc.Export(Path.GetDirectoryName(modelPath) + "\\exportedDwgs", "result.dwg", viewIds, options);
 
                     trans.Commit();
                 }
