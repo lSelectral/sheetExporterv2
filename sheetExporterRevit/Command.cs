@@ -13,8 +13,6 @@ namespace sheetExporterRevit
     [Regeneration(RegenerationOption.Manual)]
     public class Command : IExternalDBApplication
     {
-        string OUTPUT_FILE = "OutputFile.rvt";
-
         public ExternalDBApplicationResult OnShutdown(ControlledApplication application)
         {
             return ExternalDBApplicationResult.Succeeded;
@@ -31,46 +29,72 @@ namespace sheetExporterRevit
             LogTrace("Design Automation Ready event triggered...");
             e.Succeeded = true;
             DesignAutomationData data = e.DesignAutomationData;
-            Application rvtApp = data.RevitApp;
-            string modelPath = data.FilePath;
-            Document doc = data.RevitDoc;
 
-            using (Transaction t = new Transaction(doc))
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
+            Application rvtApp = data.RevitApp;
+            if (rvtApp == null)
+                throw new InvalidDataException(nameof(rvtApp));
+
+            string modelPath = data.FilePath;
+            if (String.IsNullOrWhiteSpace(modelPath))
+                throw new InvalidDataException(nameof(modelPath));
+
+            Document doc = data.RevitDoc;
+            if (doc == null)
+                throw new InvalidOperationException("Could not open document.");
+
+            using (Autodesk.Revit.DB.Transaction trans = new Transaction(doc, "ExportToDwgs"))
             {
-                // Start the transaction
-                t.Start("Export Sheets DWG");
                 try
                 {
-                    var viewSheets = new FilteredElementCollector(doc).OfClass(typeof(ViewSheet)).Cast<ViewSheet>().Where(vw =>
-                           vw.ViewType == ViewType.DrawingSheet && !vw.IsTemplate);
+                    trans.Start();
 
-                    // create DWG export options
-                    DWGExportOptions dwgOptions = new DWGExportOptions();
-                    dwgOptions.MergedViews = true;
-                    dwgOptions.SharedCoords = true;
-                    dwgOptions.FileVersion = ACADVersion.R2018;
+                    List<View> views = new FilteredElementCollector(doc)
+                        .OfClass(typeof(View))
+                        .Cast<View>()
+                        .Where(vw =>
+                           vw.ViewType == ViewType.DrawingSheet && !vw.IsTemplate
+                        ).ToList();
 
-                    List<ElementId> views = new List<ElementId>();
-
-                    foreach (var sheet in viewSheets)
+                    List<ElementId> viewIds = new List<ElementId>();
+                    foreach (View view in views)
                     {
-                        if (!sheet.IsPlaceholder)
-                        {
-                            views.Add(sheet.Id);
-                        }
+                        ViewSheet viewSheet = view as ViewSheet;
+                        viewIds.Add(viewSheet.Id);
                     }
 
-                    // For Web Deployment
-                    //doc.Export(@"D:\sheetExporterLocation", "TEST", views, dwgOptions);
-                    // For Local
-                    doc.Export(Directory.GetCurrentDirectory() + "//exportedDwgs", "rvt", views, dwgOptions);
+                    DWGExportOptions options = new DWGExportOptions();
+                    ExportDWGSettings dwgSettings = ExportDWGSettings.Create(doc, "mySetting");
+                    options = dwgSettings.GetDWGExportOptions();
+                    options.MergedViews = true;
 
+                    doc.Export(Path.GetDirectoryName(modelPath) + "\\exportedDwgs", "rvt", viewIds, options);
+
+                    //if (RuntimeValue.RunOnCloud)
+                    //{
+                    //    doc.Export(Directory.GetCurrentDirectory() + "\\exportedDwgs", "rvt", viewIds, options);
+                    //}
+                    //else
+                    //{
+                    //    // For local test
+                    //    doc.Export(Path.GetDirectoryName(modelPath) + "\\exportedDwgs", "rvt", viewIds, options);
+                    //}
+
+                    trans.Commit();
                 }
-                catch (Exception ex)
+                catch (Exception ee)
                 {
+                    System.Diagnostics.Debug.WriteLine(ee.Message);
+                    System.Diagnostics.Debug.WriteLine(ee.StackTrace);
+                    return;
                 }
-                // Commit the transaction
-                t.Commit();
+                finally
+                {
+                    if (trans.HasStarted())
+                        trans.RollBack();
+                }
             }
         }
 
